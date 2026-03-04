@@ -22,8 +22,9 @@ scene.add(cube);
 
 
 const Light = new THREE.DirectionalLight(0xffffff, 5);
-Light.position.y = 4;
-Light.position.z = 4;
+Light.position.y = 0.3;
+Light.position.z = 1;
+Light.position.x = 0;
 scene.add(Light);
 
 
@@ -37,5 +38,8 @@ document.body.appendChild(renderer.domElement);
 
 function animate() {
   renderer.render(scene, camera);
+  cube.rotation.x += 0.1;
+  cube.rotation.y += 0.1; 
+  cube.rotation.z += 0.1;
 }
   renderer.setAnimationLoop(animate);
