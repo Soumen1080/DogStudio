@@ -1,13 +1,18 @@
 import React from 'react'
-import { Canvas } from '@react-three/fiber'
+import { useThree } from '@react-three/fiber'
 
 const Dog = () => {
-  return (
+  const { camera, scene, gl } = useThree()
+  
+  console.log(camera)
+  console.log(scene)
+  console.log(gl)
 
-      <Canvas>
-        
-      </Canvas>
-    
+  return (
+    <mesh>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshBasicMaterial color="#00ff00" />
+    </mesh>
   )
 }
 
