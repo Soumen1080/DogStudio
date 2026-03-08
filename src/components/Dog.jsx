@@ -9,8 +9,8 @@ const Dog = () => {
   
   // Set camera to proper viewing distance
   React.useEffect(() => {
-    camera.position.set(0, 1, 5)
-    camera.lookAt(0, 0, 0)
+    camera.position.set(0, 1, 5 ) //  Position the camera slightly above and back from the model
+    camera.lookAt(0, 0, 0) // work around the fact that the model is not centered at the origin  
   }, [camera])
   
   return (
@@ -27,14 +27,14 @@ const Dog = () => {
       {/* Environment for realistic PBR material reflection */}
       <Environment preset="sunset" />
       
-      <primitive object={model.scene} position={[0, 0, 0]} />
+      <primitive object={model.scene} position={[0, -0.5, 0.3]} />  { /*Adjust model position to sit on the ground plane*/}
       
       <OrbitControls 
-        enablePan={true}
-        enableZoom={true}
-        enableRotate={true}
-        minDistance={2}
-        maxDistance={10}
+        enablePan={true} // Allow panning the camera // WHAT is panning => panning is moving the camera left/right/up/down without changing its orientation
+        enableZoom={true} // Allow zooming in/out
+        enableRotate={true} // Allow rotating around the target
+        minDistance={1}
+        maxDistance={1}
       />
     </>
   )
