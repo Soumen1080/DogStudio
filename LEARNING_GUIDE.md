@@ -7,7 +7,8 @@
 4. [Hooks & Functions](#hooks--functions)
 5. [Data Types & Props](#data-types--props)
 6. [3D Concepts](#3d-concepts)
-7. [Step-by-Step Learning Roadmap](#step-by-step-learning-roadmap)
+7. [Advanced Techniques](#advanced-techniques)
+8. [Step-by-Step Learning Roadmap](#step-by-step-learning-roadmap)
 
 ---
 
@@ -474,7 +475,483 @@ Scene
 
 ---
 
-## 🗺️ Step-by-Step Learning Roadmap
+## � Advanced Techniques
+
+### **1. useTexture Hook** (from `@react-three/drei`)
+
+```javascript
+const textures = useTexture({
+  normalMap: '/models/dog_normal.png',
+})
+```
+
+**What it does:**
+- Loads image files as Three.js textures
+- Caches textures for performance
+- Can load multiple textures at once
+- Automatically handles texture loading state
+
+**Parameters:**
+- Single path: `useTexture('/image.png')`
+- Multiple paths: `useTexture({ map: '/a.png', normalMap: '/b.png' })`
+- Array: `useTexture(['/1.png', '/2.png'])`
+
+**Returns:**
+- Single texture: `THREE.Texture` object
+- Multiple textures: Object with named textures
+- Array: Array of texture objects
+
+**Common Texture Types:**
+```javascript
+const textures = useTexture({
+  map: '/color.png',              // Base color (albedo)
+  normalMap: '/normal.png',       // Surface detail without geometry
+  roughnessMap: '/roughness.png', // Surface roughness
+  metalnessMap: '/metalness.png', // Metallic vs non-metallic
+  aoMap: '/ao.png',               // Ambient occlusion (shadows in crevices)
+  displacementMap: '/height.png', // Actual geometry displacement
+})
+```
+
+---
+
+### **2. Normal Maps**
+
+**What is a Normal Map?**
+- Special texture that simulates surface details
+- Creates illusion of bumps and grooves WITHOUT adding geometry
+- Uses RGB colors to encode surface direction
+- **Huge performance benefit** - looks detailed but low polygon count
+
+**Visual Comparison:**
+```
+Without Normal Map:        With Normal Map:
+   Smooth surface             Detailed bumpy surface
+   500 polygons              500 polygons (same!)
+   Flat lighting              Rich lighting details
+```
+
+**How to Use:**
+```javascript
+material.normalMap = texture
+material.normalScale = new THREE.Vector2(1, 1)  // Intensity control
+```
+
+**normalScale Values:**
+- `(1, 1)` - Normal strength
+- `(2, 2)` - 2x stronger effect (more pronounced bumps)
+- `(0.5, 0.5)` - 50% weaker (subtle detail)
+- `(-1, 1)` - Invert X direction
+- `(1, -1)` - Invert Y direction
+
+**When to Use Normal Maps:**
+- Detail on curved surfaces (wrinkles, scales, fabric)
+- Brick walls, stone, concrete
+- Character skin, fur, scales
+- Any time you want detail without geometry
+
+---
+
+### **3. Scene Traversal with traverse()**
+
+```javascript
+model.scene.traverse((child) => {
+  if (child.isMesh && child.name.includes("DOG")) {
+    child.material = new THREE.MeshStandardMaterial({
+      normalMap: textures.normalMap,
+    })
+  }
+})
+```
+
+**What it does:**
+- Loops through EVERY object in a 3D model hierarchy
+- Visits parent, children, grandchildren, etc.
+- Allows you to find and modify specific parts
+
+**Parameters:**
+- Callback function that receives each object as `child`
+
+**Common Use Cases:**
+
+**1. Find Specific Meshes:**
+```javascript
+model.scene.traverse((child) => {
+  if (child.isMesh) {
+    console.log('Found mesh:', child.name)
+  }
+})
+```
+
+**2. Change Materials:**
+```javascript
+model.scene.traverse((child) => {
+  if (child.isMesh) {
+    child.material.color.set('red')  // Make everything red
+  }
+})
+```
+
+**3. Enable Shadows:**
+```javascript
+model.scene.traverse((child) => {
+  if (child.isMesh) {
+    child.castShadow = true
+    child.receiveShadow = true
+  }
+})
+```
+
+**4. Find by Name:**
+```javascript
+model.scene.traverse((child) => {
+  if (child.name === 'Head') {
+    child.visible = false  // Hide the head
+  }
+  
+  if (child.name.includes('Wheel')) {
+    child.rotation.z += 0.1  // Rotate all wheels
+  }
+})
+```
+
+**Object Properties to Check:**
+- `child.isMesh` - Is it a mesh (geometry + material)?
+- `child.isLight` - Is it a light?
+- `child.isCamera` - Is it a camera?
+- `child.name` - Object name from 3D software
+- `child.type` - Type string ('Mesh', 'Group', 'Bone', etc.)
+
+---
+
+### **4. Direct THREE.js Usage**
+
+```javascript
+import * as THREE from 'three'
+
+// Create materials directly
+const material = new THREE.MeshStandardMaterial({
+  normalMap: textures.normalMap,
+  normalScale: new THREE.Vector2(1, 1),
+})
+```
+
+**Why import THREE?**
+- Access to Three.js constructors and utilities
+- Create materials, geometries, vectors manually
+- More control than JSX components
+
+**Common THREE.js Classes:**
+
+**Materials:**
+```javascript
+new THREE.MeshBasicMaterial({ color: 0xff0000 })
+new THREE.MeshStandardMaterial({ metalness: 0.5, roughness: 0.5 })
+new THREE.MeshPhysicalMaterial({ clearcoat: 1 })
+```
+
+**Vectors:**
+```javascript
+new THREE.Vector2(x, y)      // 2D vector (UV coords, normal scale)
+new THREE.Vector3(x, y, z)   // 3D vector (positions, rotations)
+new THREE.Color(0xff0000)    // Color (can use hex, rgb, string)
+```
+
+**Geometries:**
+```javascript
+new THREE.BoxGeometry(1, 1, 1)
+new THREE.SphereGeometry(1, 32, 32)
+new THREE.PlaneGeometry(10, 10)
+```
+
+**When to Use THREE Directly:**
+- Custom material properties not available in JSX
+- Mathematical operations (vectors, matrices)
+- Advanced features (shaders, post-processing)
+- Fine-grained control
+
+---
+
+### **5. THREE.Vector2**
+
+```javascript
+normalScale: new THREE.Vector2(1, 1)
+```
+
+**What it is:**
+- A 2D vector with X and Y components
+- Used for UV coordinates, 2D positions, scales
+
+**Properties:**
+```javascript
+const vec = new THREE.Vector2(1, 1)
+vec.x  // 1
+vec.y  // 1
+```
+
+**Common Uses:**
+- **Normal map scale** - Control bump intensity
+- **Texture repeat** - `texture.repeat.set(2, 2)`
+- **Texture offset** - `texture.offset.set(0.5, 0.5)`
+- **UV coordinates** - Texture mapping positions
+
+**Methods:**
+```javascript
+vec.set(x, y)           // Set both values
+vec.add(otherVec)       // Add vectors
+vec.multiply(otherVec)  // Multiply
+vec.length()            // Distance from origin
+vec.normalize()         // Scale to length 1
+```
+
+---
+
+### **6. MeshStandardMaterial Properties**
+
+```javascript
+new THREE.MeshStandardMaterial({
+  // Color & Maps
+  color: 0xffffff,              // Base color (white = show texture colors)
+  map: colorTexture,            // Color/albedo texture
+  
+  // Normal Mapping
+  normalMap: normalTexture,     // Normal map texture
+  normalScale: new Vector2(1,1), // Bump intensity
+  
+  // PBR Properties
+  metalness: 0,                 // 0 = non-metal, 1 = full metal
+  roughness: 1,                 // 0 = mirror, 1 = rough/matte
+  metalnessMap: metalnessTexture,
+  roughnessMap: roughnessTexture,
+  
+  // Lighting Details
+  aoMap: aoTexture,             // Ambient occlusion
+  aoMapIntensity: 1,            // AO strength
+  
+  // Displacement
+  displacementMap: heightTexture,
+  displacementScale: 0.1,       // Height magnitude
+  
+  // Emission (Self-glow)
+  emissive: 0x000000,           // Glow color
+  emissiveMap: emissiveTexture,
+  emissiveIntensity: 1,
+  
+  // Other
+  opacity: 1,                   // Transparency (need transparent: true)
+  transparent: false,
+  side: THREE.FrontSide,        // Which side to render
+})
+```
+
+**Material Property Ranges:**
+- `metalness`: 0.0 to 1.0 (0 = plastic/wood, 1 = metal)
+- `roughness`: 0.0 to 1.0 (0 = polished mirror, 1 = rough matte)
+- `opacity`: 0.0 to 1.0 (0 = invisible, 1 = solid)
+- `normalScale`: (-Infinity to Infinity) - typically -2 to 2
+
+---
+
+### **7. Multiple useEffect Hooks**
+
+```javascript
+// Effect 1: Camera setup
+React.useEffect(() => {
+  camera.position.set(0, 2, 8)
+  camera.lookAt(0, 0, 0)
+}, [camera])
+
+// Effect 2: Texture application
+React.useEffect(() => {
+  model.scene.traverse((child) => {
+    // Apply materials
+  })
+}, [model, textures])
+```
+
+**Why Multiple useEffect?**
+- **Separation of Concerns** - Each effect does one thing
+- **Different Dependencies** - Run when different values change
+- **Easier Debugging** - Know which effect caused issues
+- **Better Performance** - Only re-run what changed
+
+**Dependency Arrays Explained:**
+
+```javascript
+// Runs ONCE on component mount
+useEffect(() => {
+  console.log('Component mounted')
+}, [])
+
+// Runs when 'count' changes
+useEffect(() => {
+  console.log('Count:', count)
+}, [count])
+
+// Runs on EVERY render (usually avoid this!)
+useEffect(() => {
+  console.log('Every render')
+})
+
+// Runs when camera OR model changes
+useEffect(() => {
+  console.log('Camera or model changed')
+}, [camera, model])
+```
+
+**Best Practices:**
+1. Keep effects focused (one responsibility)
+2. Always include dependencies (avoid stale closures)
+3. Use separate effects for separate concerns
+4. Add cleanup functions when needed:
+
+```javascript
+useEffect(() => {
+  const interval = setInterval(() => {
+    console.log('Tick')
+  }, 1000)
+  
+  // Cleanup function
+  return () => {
+    clearInterval(interval)
+  }
+}, [])
+```
+
+---
+
+### **8. Conditional Checks in traverse()**
+
+```javascript
+if (child.isMesh && child.name.includes("DOG"))
+```
+
+**Why Check `isMesh`?**
+- Models contain many object types (Groups, Bones, Lights, etc.)
+- Only Meshes have `geometry` and `material`
+- Prevents errors from trying to modify non-mesh objects
+
+**Object Type Checks:**
+```javascript
+child.isMesh         // THREE.Mesh
+child.isGroup        // THREE.Group
+child.isBone         // THREE.Bone
+child.isLight        // Any light type
+child.isCamera       // Any camera type
+child.isLine         // THREE.Line
+child.isPoints       // THREE.Points
+```
+
+**String Methods for Names:**
+```javascript
+// Exact match
+if (child.name === "DogBody")
+
+// Contains substring
+if (child.name.includes("DOG"))
+
+// Starts with
+if (child.name.startsWith("Dog_"))
+
+// Ends with
+if (child.name.endsWith("_LOD0"))
+
+// Case-insensitive match
+if (child.name.toLowerCase().includes("dog"))
+
+// Multiple conditions
+if (child.isMesh && child.name.includes("DOG") && child.visible)
+```
+
+**Example - Complex Filtering:**
+```javascript
+model.scene.traverse((child) => {
+  // Only visible meshes with "Dog" in name
+  if (child.isMesh && child.visible && child.name.includes("Dog")) {
+    child.material.roughness = 0.5
+  }
+  
+  // Hide all bones
+  if (child.isBone) {
+    child.visible = false
+  }
+  
+  // Log everything
+  console.log(`Type: ${child.type}, Name: ${child.name}`)
+})
+```
+
+---
+
+### **9. Texture Loading Patterns**
+
+**Single Texture:**
+```javascript
+const normalMap = useTexture('/textures/normal.png')
+material.normalMap = normalMap
+```
+
+**Multiple Textures (Object):**
+```javascript
+const { map, normalMap, roughnessMap } = useTexture({
+  map: '/textures/color.png',
+  normalMap: '/textures/normal.png',
+  roughnessMap: '/textures/roughness.png',
+})
+```
+
+**Multiple Textures (Array):**
+```javascript
+const [texture1, texture2] = useTexture([
+  '/textures/wood.png',
+  '/textures/metal.png',
+])
+```
+
+**With Preload (Better Performance):**
+```javascript
+// At bottom of component file
+useGLTF.preload('/models/dog.drc.glb')
+useTexture.preload('/textures/dog_normal.png')
+```
+
+---
+
+## 🎓 Advanced Techniques Summary
+
+### **What You've Learned:**
+
+| Technique | Purpose | Difficulty |
+|-----------|---------|------------|
+| **useTexture** | Load image files as textures | ⭐⭐ |
+| **Normal Maps** | Add surface detail without geometry | ⭐⭐⭐ |
+| **traverse()** | Find and modify model parts | ⭐⭐⭐ |
+| **THREE.js Direct** | Full control with Three.js API | ⭐⭐⭐⭐ |
+| **MeshStandardMaterial** | PBR realistic materials | ⭐⭐⭐ |
+| **Vector2** | 2D math for scales/UVs | ⭐⭐ |
+| **Multiple useEffect** | Organize side effects | ⭐⭐ |
+
+### **Your Current Project Uses:**
+
+✅ **Basic Setup** - Canvas, Camera, Lights  
+✅ **Model Loading** - useGLTF for 3D models  
+✅ **Environment** - HDR lighting  
+✅ **Controls** - OrbitControls for interaction  
+✅ **Advanced Textures** - Normal maps with useTexture  
+✅ **Material Customization** - Traverse & custom materials  
+✅ **THREE.js API** - Direct Three.js usage  
+
+### **Next Learning Steps:**
+
+1. **Animations** - Play model animations with useAnimations
+2. **Post-Processing** - Add effects (bloom, depth of field)
+3. **Interactions** - Click handling and raycasting
+4. **Physics** - Collision and gravity with cannon/rapier
+5. **Shaders** - Custom visual effects with GLSL
+
+---
+
+## �🗺️ Step-by-Step Learning Roadmap
 
 ### **Phase 1: Foundation (Week 1-2)**
 
@@ -916,20 +1393,36 @@ After mastering the basics:
 
 ## ✅ Checklist for This Project
 
+### **Basic Features:**
 - [x] React components structure
 - [x] Canvas setup with proper size
 - [x] 3D model loading with useGLTF
-- [x] Camera positioning
-- [x] Lighting setup (ambient + directional)
+- [x] Camera positioning and lookAt
+- [x] Lighting setup (ambient + directional + fill)
 - [x] Environment for PBR materials
 - [x] OrbitControls for interaction
 - [x] Proper code organization
+
+### **Advanced Features:**
+- [x] Texture loading with useTexture
+- [x] Normal maps for surface detail
+- [x] Scene traversal (model.scene.traverse)
+- [x] Custom material application
+- [x] Direct THREE.js usage
+- [x] Multiple useEffect hooks
+- [x] Conditional mesh filtering
+- [x] Camera distance controls (minDistance/maxDistance)
+
+### **Next Steps:**
 - [ ] Add animations (if model supports)
-- [ ] Add UI controls
+- [ ] Add UI controls (leva/dat.gui)
+- [ ] Add more textures (roughness, metalness, AO)
+- [ ] Add post-processing effects
+- [ ] Add click interactions
 - [ ] Deploy to production
 
 ---
 
 **Happy Learning! 🎨🚀**
 
-_Last Updated: March 8, 2026_
+_Last Updated: March 9, 2026_
