@@ -16,7 +16,7 @@ const { actions } =  useAnimations(model.animations , model.scene)
 }, [ actions ])  
 
 
-      const [normalMap,sampleMatCap1 ,] = useTexture(['/models/dog_normals.jpg','/matcap/mat-2.png','/matcap/mat-7.png' ,'/matcap/mat-8.png' ]).map((texture) => {
+      const [normalMap,sampleMatCap1 , branchesNormals ,branchesDiffuse ] = useTexture(['/models/dog_normals.jpg','/matcap/mat-2.png','/branches_normals.jpeg' ,'/branches_diffuse.jpeg' ]).map((texture) => {
       texture.flipY = false  // Flip Y for correct normal map orientation
       texture.colorSpace = THREE.SRGBColorSpace  // Ensure textures are in sRGB color space for correct colors
       return texture
@@ -36,15 +36,24 @@ const { actions } =  useAnimations(model.animations , model.scene)
     flatShading: false, // Use smooth shading for better appearance
   })
 
+  const branchesMaterial = new THREE.MeshStandardMaterial({
+    map: branchesDiffuse, // Diffuse texture for color
+    normalMap: branchesNormals, // Normal map for surface details
+    roughness: 0.8, // Adjust roughness for less shininess
+    metalness: 0.2, // Slight metallic effect for more realism
+  })
+
 
   // Apply custom material with matcap to dog parts
   React.useEffect(() => {
     model.scene.traverse((child) => {
       if (child.isMesh && child.name.includes("DOG")) {
         child.material = dogMaterial
-      }
+      }else{
+        child.material = branchesMaterial
+        }
     })
-  }, [model, normalMap, sampleMatCap1 , ]) // Re-apply material if textures change
+  }, [model, normalMap, sampleMatCap1 , branchesNormals , branchesDiffuse ]) // Re-apply material if textures change
 
 
 
