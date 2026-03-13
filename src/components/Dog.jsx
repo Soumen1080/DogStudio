@@ -16,17 +16,24 @@ const { actions } =  useAnimations(model.animations , model.scene)
 }, [ actions ])  
 
 
-      const [normalMap,sampleMatCap1 , branchesNormals ,branchesDiffuse ] = useTexture(['/models/dog_normals.jpg','/matcap/mat-2.png','/branches_normals.jpeg' ,'/branches_diffuse.jpeg' ]).map((texture) => {
+      const [normalMap,sampleMatCap1 , ] = useTexture(['/models/dog_normals.jpg','/matcap/mat-2.png', ]).map((texture) => {
       texture.flipY = false  // Flip Y for correct normal map orientation
       texture.colorSpace = THREE.SRGBColorSpace  // Ensure textures are in sRGB color space for correct colors
       return texture
     })
-
+   
+    const [ branchesNormals ,branchesDiffuse ] = useTexture(['/branches_normals.jpeg' , '/branches_diffuse.jpeg']).map((texture) => {
+         texture.flipY = true  // Flip Y for correct normal map orientation
+      texture.colorSpace = THREE.SRGBColorSpace  // Ensure textures are in sRGB color space for correct colors
+      return texture
+    })
+   
 
   // Set camera to proper viewing distance
   React.useEffect(() => {
-    camera.position.set(0, 2, 4)  // Good viewing distance: 4 units back, 2 units up
+    camera.position.set(1, 2, 4)  // Good viewing distance: 4 units back, 2 units up
     camera.lookAt(0, 0, 0)        // Look at center where dog is positioned
+     
   }, [camera])
 
 
@@ -64,10 +71,10 @@ const { actions } =  useAnimations(model.animations , model.scene)
     <>
 
   {/* Ambient light for overall scene illumination */}
-      <ambientLight intensity={1} />
+      <ambientLight intensity={0.5} />
       
       {/* Main directional light (sun) - softer intensity */}
-      <directionalLight position={[25, 25, 25]} intensity={1} castShadow />
+      <directionalLight position={[5, 5, 5]} intensity={0.5} castShadow />
       
       
          
