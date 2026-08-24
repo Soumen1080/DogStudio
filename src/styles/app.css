@@ -1,0 +1,1095 @@
+/* ==========================================================================
+   BRAQUE — components
+   Ordered the way the page is read: chrome, then section by section.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Stage — the fixed WebGL layer everything else scrolls over
+   -------------------------------------------------------------------------- */
+
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+/* A soft brass pool so the object sits in light rather than floating in void. */
+.stage::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: min(90vw, 62rem);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(203, 161, 53, 0.13) 0%,
+    rgba(203, 161, 53, 0.05) 34%,
+    transparent 68%
+  );
+  filter: blur(18px);
+}
+
+.stage canvas { position: relative; z-index: 1; }
+
+/* --------------------------------------------------------------------------
+   2. Film grain + vignette — cheap, and they do more for perceived quality
+      than almost anything else on the page
+   -------------------------------------------------------------------------- */
+
+.grain {
+  position: fixed;
+  inset: -60%;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 6s steps(8) infinite;
+}
+
+@keyframes grain {
+  0%   { transform: translate(0, 0); }
+  12%  { transform: translate(-6%, -3%); }
+  25%  { transform: translate(4%, -6%); }
+  37%  { transform: translate(-3%, 5%); }
+  50%  { transform: translate(6%, 3%); }
+  62%  { transform: translate(-5%, -5%); }
+  75%  { transform: translate(3%, 6%); }
+  87%  { transform: translate(-6%, 2%); }
+  100% { transform: translate(0, 0); }
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 42%, rgba(0, 0, 0, 0.55) 100%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, transparent 22%);
+}
+
+/* --------------------------------------------------------------------------
+   3. Custom cursor
+   -------------------------------------------------------------------------- */
+
+html.has-cursor,
+html.has-cursor * { cursor: none !important; }
+
+.cursor-dot,
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--brass);
+}
+
+.cursor-ring {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 1px solid rgba(203, 161, 53, 0.55);
+  border-radius: 50%;
+  backdrop-filter: invert(1) grayscale(1);
+}
+
+.cursor-ring span {
+  font-size: 3.4px;      /* scaled up with the ring, so it stays crisp */
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  /* The ring inverts whatever is behind it, so on a dark page the disc reads
+     light — the label has to be ink, not bone, or it vanishes into it. */
+  color: var(--ink);
+  font-weight: 500;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+@media (pointer: coarse) {
+  .cursor-dot, .cursor-ring { display: none; }
+}
+
+/* --------------------------------------------------------------------------
+   4. Scroll rail
+   -------------------------------------------------------------------------- */
+
+.rail {
+  position: fixed;
+  top: 22vh;
+  right: max(0.9rem, calc(var(--gutter) * 0.42));
+  bottom: 22vh;
+  width: 1px;
+  z-index: 40;
+  background: var(--line);
+  pointer-events: none;
+}
+.rail span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--brass-hi), var(--brass));
+  transform-origin: top;
+  transform: scaleY(0);
+}
+
+@media (max-width: 700px) { .rail { display: none; } }
+
+/* --------------------------------------------------------------------------
+   5. Preloader
+   -------------------------------------------------------------------------- */
+
+.pre {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background: var(--ink);
+  clip-path: inset(0% 0% 0% 0%);
+}
+
+.pre__inner { text-align: center; }
+
+.pre__row { overflow: hidden; }
+
+.pre__mark {
+  display: block;
+  font-size: clamp(3rem, 12vw, 9rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.pre__meta {
+  display: flex;
+  justify-content: center;
+  gap: 1.6rem;
+  margin-top: 1rem;
+  color: var(--bone-46);
+}
+
+.pre__count {
+  position: absolute;
+  right: var(--gutter);
+  bottom: calc(var(--gutter) + 1.6rem);
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  letter-spacing: -0.02em;
+  font-weight: 300;
+  color: var(--bone);
+}
+.pre__count i {
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  font-style: normal;
+  color: var(--bone-28);
+}
+
+.pre__bar {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--gutter);
+  height: 1px;
+  background: var(--line);
+}
+.pre__bar span {
+  display: block;
+  height: 100%;
+  background: var(--brass);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+/* --------------------------------------------------------------------------
+   6. Nav
+   -------------------------------------------------------------------------- */
+
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.35rem var(--gutter);
+  mix-blend-mode: difference; /* legible over both the object and the page */
+}
+
+.nav__mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--f-display);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+.nav__glyph {
+  display: grid;
+  place-items: center;
+  color: var(--brass);
+  transition: transform 0.6s var(--e-out);
+}
+.nav__mark:hover .nav__glyph { transform: rotate(-12deg) scale(1.12); }
+.nav__mark sup { color: var(--bone-46); }
+
+.nav__links {
+  display: flex;
+  gap: 2.2rem;
+}
+.nav__links a {
+  position: relative;
+  display: block;
+  height: 1em;
+  line-height: 1;
+  overflow: hidden;
+  color: var(--bone-70);
+}
+.nav__links a span {
+  display: block;
+  transition: transform 0.55s var(--e-out);
+}
+.nav__links a span:last-child {
+  position: absolute;
+  inset: 0;
+  transform: translateY(100%);
+  color: var(--brass);
+}
+.nav__links a:hover span:first-child { transform: translateY(-100%); }
+.nav__links a:hover span:last-child { transform: translateY(0); }
+
+.nav__end {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+
+.nav__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  transition: border-color 0.4s var(--e-out), background 0.4s var(--e-out);
+}
+.nav__toggle:hover { border-color: rgba(203, 161, 53, 0.6); }
+.nav__toggle i {
+  display: block;
+  width: 14px;
+  height: 1px;
+  background: currentColor;
+  transition: transform 0.45s var(--e-out);
+}
+.nav__toggle i:first-of-type { margin-right: -14px; transform: translateY(-2.5px); }
+.nav__toggle i:nth-of-type(2) { transform: translateY(2.5px); }
+.nav__toggle.is-open i:first-of-type { transform: rotate(45deg); }
+.nav__toggle.is-open i:nth-of-type(2) { transform: rotate(-45deg); }
+
+@media (max-width: 900px) {
+  .nav__links, .nav__clock { display: none; }
+}
+
+/* --------------------------------------------------------------------------
+   7. Menu overlay
+   -------------------------------------------------------------------------- */
+
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  align-items: center;
+  background: var(--ink-2);
+  clip-path: inset(0% 0% 100% 0%);
+  pointer-events: none;
+}
+
+.menu__grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: clamp(2rem, 6vw, 6rem);
+  align-items: center;
+  padding-block: 8rem 4rem;
+}
+
+.menu__nav { display: grid; }
+
+.menu__link {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 1.2rem;
+  padding: clamp(0.5rem, 1.4vh, 1rem) 0;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line-soft);
+  transition: color 0.45s var(--e-out);
+}
+.menu__link em {
+  font-style: normal;
+  color: var(--bone-28);
+  transition: color 0.45s var(--e-out);
+}
+.menu__link span { display: block; }
+.menu__link:hover { color: var(--brass-hi); }
+.menu__link:hover em { color: var(--brass); }
+
+.menu__aside {
+  display: grid;
+  gap: 2rem;
+  align-content: center;
+  font-size: 0.95rem;
+  color: var(--bone-70);
+}
+.menu__aside p.mono { margin-bottom: 0.6rem; }
+
+.menu__mail {
+  font-family: var(--f-display);
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  color: var(--bone);
+  border-bottom: 1px solid var(--line);
+  transition: color 0.4s, border-color 0.4s;
+}
+.menu__mail:hover { color: var(--brass); border-color: var(--brass); }
+
+.menu__social { list-style: none; display: grid; gap: 0.35rem; }
+.menu__social a { transition: color 0.35s; }
+.menu__social a:hover { color: var(--brass); }
+
+@media (max-width: 860px) {
+  .menu__grid { grid-template-columns: 1fr; align-content: center; }
+  .menu__aside { display: none; }
+}
+
+/* --------------------------------------------------------------------------
+   8. Hero
+   -------------------------------------------------------------------------- */
+
+.hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  align-items: flex-end;
+  padding-block: 7.5rem 2.6rem;
+}
+
+.hero__inner { width: 100%; }
+
+.hero__top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.6rem 2.4rem;
+  padding-bottom: 1.1rem;
+  margin-bottom: clamp(1.5rem, 4vh, 3rem);
+  border-bottom: 1px solid var(--line);
+}
+.hero__top span:last-child { margin-left: auto; }
+
+/* Capped so the last line stops short of the object on the right. */
+.hero__title { max-width: 13ch; }
+
+.hero__foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: end;
+  margin-top: clamp(1.5rem, 4.5vh, 3rem);
+}
+
+.hero__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1.8rem;
+}
+
+.hero__meta {
+  display: flex;
+  gap: 2.2rem;
+  text-align: right;
+}
+.hero__meta dt { margin-bottom: 0.3rem; }
+.hero__meta dd { color: var(--bone); }
+
+.cue {
+  position: absolute;
+  left: 50%;
+  bottom: 1.6rem;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  color: var(--bone-46);
+  z-index: 3;
+}
+.cue i {
+  display: block;
+  width: 1px;
+  height: 46px;
+  background: linear-gradient(to bottom, var(--brass), transparent);
+  animation: cue 2.4s var(--e-io) infinite;
+  transform-origin: top;
+}
+@keyframes cue {
+  0%   { transform: scaleY(0); opacity: 0; }
+  35%  { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1) translateY(46px); opacity: 0; }
+}
+
+@media (max-width: 860px) {
+  .hero { align-items: flex-end; }
+  .hero__foot { grid-template-columns: 1fr; }
+  .hero__side { align-items: flex-start; }
+  .hero__meta { text-align: left; gap: 1.6rem; }
+  .cue { display: none; }
+}
+
+/* --------------------------------------------------------------------------
+   9. Buttons + link affordances
+   -------------------------------------------------------------------------- */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  overflow: hidden;
+  font-size: 0.9rem;
+  isolation: isolate;
+  transition: border-color 0.5s var(--e-out), color 0.5s var(--e-out);
+}
+.btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--brass);
+  transform: translateY(101%);
+  transition: transform 0.6s var(--e-out);
+}
+.btn:hover { color: var(--ink); border-color: var(--brass); }
+.btn:hover::before { transform: translateY(0); }
+
+.btn__label {
+  position: relative;
+  display: block;
+  height: 1.2em;
+  line-height: 1.2;
+  overflow: hidden;
+}
+.btn__label span { display: block; transition: transform 0.55s var(--e-out); }
+.btn__label span:last-child { position: absolute; inset: 0; transform: translateY(100%); }
+.btn:hover .btn__label span:first-child { transform: translateY(-100%); }
+.btn:hover .btn__label span:last-child { transform: translateY(0); }
+
+.btn__arrow { display: grid; place-items: center; transition: transform 0.5s var(--e-out); }
+.btn:hover .btn__arrow { transform: translate(3px, -3px); }
+
+.btn--lg {
+  padding: 1.15rem 1.9rem;
+  font-family: var(--f-display);
+  font-size: clamp(1.1rem, 1.8vw, 1.6rem);
+}
+.btn--lg .btn__label { height: 1.15em; line-height: 1.15; }
+
+.link-underline {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 2px;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.55s var(--e-out);
+}
+.link-underline:hover::after { transform: scaleX(1); transform-origin: left; }
+.link-underline:hover { color: var(--brass); }
+
+/* --------------------------------------------------------------------------
+   10. Marquee
+   -------------------------------------------------------------------------- */
+
+.marquee {
+  overflow: hidden;
+  padding-block: clamp(1.2rem, 2.6vh, 2rem);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 8, 10, 0.5);
+  backdrop-filter: blur(6px);
+}
+
+.marquee__track { display: flex; width: max-content; will-change: transform; }
+
+.marquee__item {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.4rem, 3vw, 3rem);
+  padding-right: clamp(1.4rem, 3vw, 3rem);
+}
+.marquee__item .display {
+  font-size: clamp(1.6rem, 3.4vw, 3.2rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+.marquee__item:nth-child(even) .display { font-style: italic; color: var(--brass); }
+
+.marquee__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--brass);
+  flex: none;
+}
+
+/* --------------------------------------------------------------------------
+   11. Manifesto
+   -------------------------------------------------------------------------- */
+
+.manifesto__body {
+  margin-top: clamp(3rem, 8vh, 6rem);
+  max-width: 24ch;
+  font-size: clamp(1.9rem, 4.6vw, 4.4rem);
+  line-height: 1.08;
+  max-width: 18ch;
+}
+.manifesto__body { max-width: min(100%, 26ch); }
+
+.manifesto__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 2.5rem;
+  margin-top: clamp(3rem, 8vh, 6rem);
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+}
+
+.manifesto__stats { display: flex; gap: clamp(2rem, 5vw, 4.5rem); }
+.manifesto__stats dd {
+  font-size: clamp(2rem, 3.6vw, 3.4rem);
+  line-height: 1;
+  color: var(--brass-hi);
+}
+.manifesto__stats dt { margin-top: 0.5rem; }
+
+/* The word-scrub reveal needs inline-block words to accept a filter. */
+.r-word { display: inline-block; will-change: opacity, filter; }
+
+/* --------------------------------------------------------------------------
+   12. Capabilities
+   -------------------------------------------------------------------------- */
+
+.cap { position: relative; }
+
+/*
+ * The object gutter.
+ *
+ * Every full-width list on this site stops short of the right edge so the 3D
+ * object has somewhere to live that is not on top of the type. Without this
+ * the dog lands squarely on the tag pills at 1600px.
+ */
+.cap__head,
+.cap__list,
+.rec__counters,
+.rec__list {
+  max-width: min(100%, 66rem);
+}
+@media (max-width: 1200px) {
+  .cap__head, .cap__list, .rec__counters, .rec__list { max-width: 100%; }
+}
+
+.cap__head {
+  display: grid;
+  gap: clamp(2rem, 5vh, 3.5rem);
+  margin-bottom: clamp(3rem, 8vh, 5rem);
+}
+.cap__intro { max-width: 18ch; }
+
+.cap__list { border-top: 1px solid var(--line); }
+
+.cap__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1.1fr) minmax(0, 1fr) auto;
+  gap: clamp(1.2rem, 3vw, 3rem);
+  align-items: center;
+  padding-block: clamp(1.6rem, 4vh, 2.8rem);
+  border-bottom: 1px solid var(--line);
+  transition: color 0.4s var(--e-out);
+}
+
+.cap__n { color: var(--bone-46); }
+
+.cap__title {
+  font-size: clamp(1.7rem, 3.4vw, 3.1rem);
+  line-height: 1.05;
+  will-change: transform;
+}
+
+.cap__blurb { color: var(--bone-46); font-size: 0.95rem; max-width: 44ch; }
+
+.cap__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  justify-content: flex-end;
+}
+.cap__tags li {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  color: var(--bone-46);
+  white-space: nowrap;
+}
+
+.cap__preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(14rem, 24vw, 22rem);
+  aspect-ratio: 1015 / 550;
+  margin: -7rem 0 0 -11rem;
+  z-index: 3;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 3px;
+  transform: scale(0.94);
+  will-change: transform, opacity;
+  background:
+    radial-gradient(120% 100% at 50% 10%, rgba(203, 161, 53, 0.12), transparent 62%),
+    linear-gradient(180deg, var(--ink-raise), var(--ink-2));
+}
+.cap__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  mix-blend-mode: screen;
+  filter: grayscale(0.3) contrast(1.08) brightness(1.5);
+}
+.cap__preview::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(203, 161, 53, 0.4);
+  border-radius: 3px;
+  background: linear-gradient(to top, rgba(8, 8, 10, 0.5), transparent 55%);
+}
+
+@media (max-width: 900px) {
+  .cap__row { grid-template-columns: 3rem 1fr; row-gap: 0.7rem; }
+  .cap__blurb { grid-column: 2; }
+  .cap__tags { grid-column: 2; justify-content: flex-start; }
+  .cap__preview { display: none; }
+}
+
+/* --------------------------------------------------------------------------
+   13. Work — pinned horizontal rail
+   -------------------------------------------------------------------------- */
+
+.work { position: relative; }
+
+.work__viewport {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.work__track {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.5rem, 3.4vw, 3.5rem);
+  padding-inline: var(--gutter);
+  will-change: transform;
+}
+
+.work__intro {
+  flex: none;
+  width: min(78vw, 34rem);
+  display: grid;
+  gap: 1.8rem;
+  padding-right: clamp(2rem, 5vw, 5rem);
+}
+.work__intro h2 { max-width: 12ch; }
+
+.work__hint { display: flex; align-items: center; gap: 0.7rem; }
+.work__hint i {
+  display: block;
+  width: 46px;
+  height: 1px;
+  background: var(--brass);
+  transform-origin: left;
+  animation: hint 2.6s var(--e-io) infinite;
+}
+@keyframes hint {
+  0%, 100% { transform: scaleX(0.2); opacity: 0.4; }
+  50%      { transform: scaleX(1); opacity: 1; }
+}
+
+.card {
+  flex: none;
+  width: min(84vw, 38rem);
+  display: grid;
+  gap: 1.1rem;
+}
+
+/* The source art is 1015x550. A portrait frame would crop it to a narrow
+   centre strip, so the frame follows the material rather than the other way
+   round. */
+/*
+ * Half the covers are PNGs that are 40-55% transparent; the rest are opaque
+ * but very dark. Screen-blending the art over a lit plate makes both behave
+ * the same way — dark pixels dissolve into the plate, bright ones glow — so
+ * the row reads as one set rather than two.
+ */
+.card__frame {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 2px;
+  border: 1px solid var(--line-soft);
+  background:
+    radial-gradient(120% 100% at 50% 12%, rgba(203, 161, 53, 0.11), transparent 64%),
+    linear-gradient(180deg, var(--ink-raise), var(--ink-2));
+}
+
+.card__art {
+  width: 118%;
+  height: 100%;
+  object-fit: cover;
+  mix-blend-mode: screen;
+  filter: grayscale(0.92) contrast(1.12) brightness(1.5);
+  transition: filter 0.8s var(--e-out), transform 0.8s var(--e-out);
+  will-change: transform;
+}
+.card:hover .card__art { filter: grayscale(0) contrast(1.04) brightness(1.35); }
+
+.card__frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8, 8, 10, 0.5), transparent 58%);
+  opacity: 0.8;
+  transition: opacity 0.6s var(--e-out);
+}
+.card:hover .card__frame::after { opacity: 0.35; }
+
+.card__n {
+  position: absolute;
+  z-index: 2;
+  top: 1rem;
+  left: 1rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgba(239, 234, 225, 0.2);
+  border-radius: 2px;
+  backdrop-filter: blur(8px);
+  color: var(--bone);
+}
+
+.card__meta { display: grid; gap: 0.45rem; }
+.card__meta h3 {
+  font-size: clamp(1.4rem, 2.4vw, 2.1rem);
+  line-height: 1.05;
+  transition: color 0.5s var(--e-out);
+}
+.card:hover .card__meta h3 { color: var(--accent, var(--brass)); }
+
+.card__year {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+  color: var(--bone-46);
+}
+
+.work__end {
+  flex: none;
+  width: min(70vw, 24rem);
+  display: grid;
+  gap: 1.6rem;
+  align-content: center;
+  padding-left: clamp(1rem, 3vw, 3rem);
+}
+
+@media (max-width: 900px) {
+  .work__viewport { min-height: 0; display: block; padding-block: var(--section-y); }
+  .work__track {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 3rem;
+    transform: none !important;
+  }
+  .work__intro, .card, .work__end { width: 100%; padding: 0; }
+  .work__hint { display: none; }
+}
+
+/* --------------------------------------------------------------------------
+   14. Finishes
+   -------------------------------------------------------------------------- */
+
+/* Finishes is the one section where the object is the subject, so it gets a
+   full viewport to itself: the pose has time to arrive, hold while the visitor
+   plays with the swatches, and leave. A short section would hand it straight
+   over to the next pose. */
+.fin {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+}
+.fin > .shell { width: 100%; }
+
+.fin__grid {
+  display: grid;
+  /* Copy | object lane | panel. The centre gap is the object's stage. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr);
+  gap: clamp(2.5rem, 9vw, 9rem);
+  align-items: center;
+  margin-top: clamp(2rem, 5vh, 3.5rem);
+}
+
+.fin__copy { display: grid; gap: 1.6rem; align-content: center; }
+.fin__copy h2 { max-width: 11ch; }
+
+.fin__panel {
+  display: grid;
+  gap: 1.4rem;
+  padding: clamp(1.4rem, 2.6vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(12, 12, 16, 0.55);
+  backdrop-filter: blur(14px);
+}
+
+.fin__readout { min-height: 4.2rem; overflow: hidden; }
+.fin__name {
+  font-size: clamp(1.6rem, 2.8vw, 2.4rem);
+  line-height: 1.1;
+  color: var(--brass-hi);
+}
+
+.fin__chips {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.fin__indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1px solid var(--brass);
+  border-radius: 3px;
+  pointer-events: none;
+  will-change: transform, width, height;
+}
+
+.fin__chip {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 3px;
+  text-align: left;
+  color: var(--bone-46);
+  transition: color 0.4s var(--e-out), background 0.4s var(--e-out);
+}
+.fin__chip:hover { background: rgba(239, 234, 225, 0.03); color: var(--bone-70); }
+.fin__chip.is-active { color: var(--bone); }
+
+.fin__swatch {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.4),
+    inset -2px -3px 4px rgba(0, 0, 0, 0.45),
+    inset 2px 2px 3px rgba(255, 255, 255, 0.28);
+}
+
+.fin__label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.fin__note { padding-top: 0.9rem; border-top: 1px solid var(--line-soft); }
+
+@media (max-width: 900px) {
+  .fin { min-height: 0; display: block; }
+  .fin__grid { grid-template-columns: 1fr; gap: 2.5rem; }
+  /* Push the panel below the copy so the object has clear air between them. */
+  .fin__panel { order: 2; margin-top: 42vh; }
+}
+
+/* --------------------------------------------------------------------------
+   15. Recognition
+   -------------------------------------------------------------------------- */
+
+.rec__counters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: clamp(2.5rem, 7vh, 4.5rem);
+}
+.rec__counters dd {
+  font-size: clamp(2.6rem, 7vw, 6rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.rec__counters dt { margin-top: 0.6rem; }
+
+.rec__list { list-style: none; margin-top: clamp(3rem, 8vh, 5.5rem); }
+
+.rec__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr) auto;
+  gap: clamp(1rem, 3vw, 2.5rem);
+  align-items: baseline;
+  padding-block: clamp(1rem, 2.6vh, 1.6rem);
+  transition: color 0.4s var(--e-out);
+}
+.rec__rule {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--line);
+  transform-origin: left;
+}
+.rec__row:hover { color: var(--brass-hi); }
+.rec__title { font-size: clamp(1.15rem, 2vw, 1.75rem); line-height: 1.15; }
+.rec__year { color: var(--brass); }
+
+@media (max-width: 700px) {
+  .rec__counters { grid-template-columns: repeat(2, 1fr); gap: 2rem 1rem; }
+  .rec__row { grid-template-columns: 4rem 1fr; }
+  .rec__body { grid-column: 2; }
+}
+
+/* --------------------------------------------------------------------------
+   16. Contact + footer
+   -------------------------------------------------------------------------- */
+
+.contact { position: relative; overflow: hidden; }
+
+.contact__glow {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  width: min(120vw, 70rem);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(203, 161, 53, 0.16), transparent 62%);
+  filter: blur(50px);
+  pointer-events: none;
+}
+
+.contact__title {
+  margin-top: clamp(2rem, 6vh, 3.5rem);
+  max-width: 13ch;
+}
+
+.contact__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 2.5rem;
+  margin-top: clamp(2.5rem, 7vh, 4rem);
+}
+
+.contact__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 2.5rem;
+  color: var(--bone-70);
+}
+.contact__status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7ec87e;
+  box-shadow: 0 0 0 0 rgba(126, 200, 126, 0.6);
+  animation: pulse 2.4s infinite;
+}
+@keyframes pulse {
+  70%  { box-shadow: 0 0 0 9px rgba(126, 200, 126, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(126, 200, 126, 0); }
+}
+
+.foot {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2.5rem;
+  margin-top: clamp(5rem, 14vh, 9rem);
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+  color: var(--bone-70);
+}
+.foot__col p.mono { margin-bottom: 0.7rem; }
+.foot__col ul { list-style: none; display: grid; gap: 0.3rem; }
+.foot__col--end { text-align: right; }
+
+.foot__bar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line-soft);
+  color: var(--bone-46);
+}
+.foot__bar a { transition: color 0.35s; }
+.foot__bar a:hover { color: var(--brass); }
+
+@media (max-width: 760px) {
+  .foot { grid-template-columns: 1fr; gap: 2rem; }
+  .foot__col--end { text-align: left; }
+}
+
+/* --------------------------------------------------------------------------
+   17. Splits produced by GSAP — masks need overflow control
+   -------------------------------------------------------------------------- */
+
+.r-line { will-change: transform; }
+.r-char { display: inline-block; will-change: transform; }
